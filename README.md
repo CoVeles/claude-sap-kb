@@ -261,6 +261,14 @@ documentation repos (e.g. `SAP-docs/*`, mostly CC BY 4.0) carries its own licens
 - **Index looks stale** → re-run `python <KB root>/_tools/build_index.py`. Never edit
   `INDEX.json` / `INDEX.md` by hand; they're regenerated from the `reference.json` files.
 
+## Related
+
+**[claude-abap-dev](https://github.com/CoVeles/claude-abap-dev)**: a Claude Code plugin with ABAP
+development workflows that use this KB for their explanations: ATC fixing in confirmed batches,
+a clean-core audit against SAP's released-objects list, a Clean ABAP review with cited rules, and
+ABAP Unit runs. It runs on the community ABAP MCP servers (mcp-abap-adt, vibing-steampunk,
+abaplint, mcp-sap-docs).
+
 ## Acknowledgements
 
 The help.sap.com JSON-endpoint approach follows
