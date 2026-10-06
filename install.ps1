@@ -104,7 +104,7 @@ question - before answering from memory or searching the web - invoke the ``sap-
 and answer from the local knowledge base at ``$KbRoot``
 (master list: ``INDEX.json``). This applies to subagents too.
 
-- Answer only from a read page/source; **cite** every SAP claim (``<topic>/reference.json`` + page).
+- Answer only from a read page/source; **cite** every SAP claim (``[kb: <topic> <tag> p<n>]``, the page's cite from ``<topic>/reference.json``).
 - Never invent SAP facts. If the KB lacks the answer, say so, then follow the skill's fallback
   ladder: local ``sap-docs`` MCP if installed (``[sap-docs: ...]``) -> live help.sap.com
   (``[sap-help: URL]``) -> Community (``[community - unverified]``) -> web

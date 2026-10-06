@@ -17,7 +17,7 @@ description: >
 
 This skill has two jobs. Decide which by the request:
 - **RETRIEVE** — someone needs SAP info → answer from the store (default).
-- **INGEST** — a new `<topic>/source.pdf` was added → read it fully, build its `reference.md`, update `INDEX.md`.
+- **INGEST** — a new `<topic>/` folder with PDF(s) was added → read it fully, build its `reference.json`, rebuild the index.
 
 ---
 
@@ -26,9 +26,11 @@ This skill has two jobs. Decide which by the request:
 1. **Never imagine.** State only what is present on a page you actually read or a
    source you actually fetched. No inference to fill gaps. No "SAP usually…".
 2. **Always read complete.** Ingestion reads to the LAST page — never sample.
-   Retrieval reads every page a `reference.md` cites for the question.
+   Retrieval reads every page the topic's `reference.json` points to for the question.
 3. **Always cite, with the source tier visible.** Every SAP claim carries one of:
-   - `[kb: <topic> p<n>]` — this store (PDF page or crawl page). Authoritative, fully read.
+   - `[kb: <topic> <tag> p<n>]` — this store, using the page's own cite from `reference.json`
+     (e.g. `[kb: Application Log (BC-SRV-BAL) oo p25]`; the tag names the source file, so keep
+     it — `p25` alone is ambiguous when a topic has several sources). Authoritative, fully read.
    - `[sap-docs: <doc id or URL>]` — the local `sap-docs` MCP's offline corpus (official SAP
      open-source doc repos: ABAP keyword docs, cheat sheets, style guides, RAP samples, UI5,
      CAP, BTP, released-objects list). Authoritative text, but found by search, not read whole.
@@ -49,12 +51,20 @@ This skill has two jobs. Decide which by the request:
 
 ## RETRIEVE
 
-1. Read `{{SAP_KB_ROOT}}\INDEX.md`.
+1. Read `{{SAP_KB_ROOT}}\INDEX.json` (machine list; `INDEX.md` is its
+   human mirror — same content).
 2. Match the question to a topic. If one exists:
-   - Open that `<topic>/reference.md`, find the relevant page(s) in its topic map.
-   - Read exactly those pages of `<topic>/source.pdf` (use the `pages` arg; ≤20/req).
-   - If a cited diagram matters, open `<topic>/extracted/img/…png` and read it visually.
-   - Answer, citing `topic/reference.md` + page for each claim.
+   - Open `<topic>/reference.json`. Search its `pages[]` (each has `file_tag`, `page`,
+     `keywords`, `summary`, `facts[]` with `cite`), plus `keywords`, `entities` and `gaps`.
+     Never load the whole file into context for a big topic — grep/filter it.
+   - Read the source text of exactly those pages to confirm the facts:
+     - PDF topic: `<topic>/*.pdf` with the `pages` arg (≤20/req); the tag maps to the PDF in
+       `sources[]`.
+     - Crawled/fetched topic (no PDF): `<topic>/extracted/text/NN_<tag>.md`, the `## PAGE <n>`
+       block; its `SOURCE_URL` is in that block and in `reference.json → source_urls`.
+   - If a cited diagram matters, open the image from `diagrams[]` (`path`) and read it visually.
+   - Answer, citing `[kb: <topic> <tag> p<n>]` per claim (Rule 3). Mention the topic's
+     `warnings` when they affect the answer (e.g. version skew between sources).
 3. If NO topic matches, or the matched topic marks the sub-question as a gap: **tell the user
    the KB has no coverage for X**, then continue down the ladder:
    a. **`sap-docs` MCP, offline corpus** — first choice for ABAP syntax/statements, ABAP Cloud
@@ -63,18 +73,25 @@ This skill has two jobs. Decide which by the request:
       Fiori elements, CAP, BTP. Call `search` with `includeOnline: false`, then `fetch` the
       best hits and read them before answering. Use `abapFlavor` (standard vs cloud) to match
       the user's system. Cite `[sap-docs: …]`.
-   b. **help.sap.com live** — `search` with `includeOnline: true` (or
-      `python {{SAP_KB_ROOT}}\_tools\fetch_sap_help.py search "<query>"`), then fetch the page. This is the
-      tier for S/4HANA functional/config topics (PP, MM, EWM, LO-VC, …), which the offline
-      corpus does not cover. Cite `[sap-help: URL]` with product + version.
+   b. **help.sap.com live** — `search` with `includeOnline: true`, or without sap-docs:
+      `python {{SAP_KB_ROOT}}\_tools\fetch_sap_help.py search "<query>"`, then
+      read the hit with `fetch_sap_help.py page <url>` (prints the page, writes nothing). For the
+      ABAP Keyword Documentation (`/doc/abapdocu_*` URLs, incl. release news `ABENNEWS-*`) use
+      `python …\_tools\fetch_keyworddoc.py <url>`. This is the tier for S/4HANA functional/config
+      topics (PP, MM, EWM, LO-VC, …), which the offline corpus does not cover. Cite
+      `[sap-help: URL]` with product + version. If you reached a page by constructing its URL
+      rather than through a search hit, say so.
    c. **SAP Community** (`sap_community_search`) — hints only, `[community — unverified]`.
    d. **Web** — `[web — unverified against official PDF]`.
    When a topic needed tier b–d and will come up again, suggest making it authoritative:
    export the guide's PDF into the KB, or fetch the section with `fetch_sap_help.py` (skill
    `sap-crawl`, HTTP mode) and ingest it.
 4. Never answer an SAP question from model memory alone. If no tier yields it, say so plainly.
-5. If the `sap-docs` MCP is not connected in this session, skip tier a/b-via-MCP and use
-   `fetch_sap_help.py` for help.sap.com; mention that sap-docs was unavailable.
+5. If the `sap-docs` MCP is not connected in this session (no `mcp__sap-docs__*` tools — e.g. the
+   server was added after the session started), skip tier a/b-via-MCP and use the `_tools`
+   scripts for help.sap.com; mention that sap-docs was unavailable. Note: "which release
+   introduced X" questions are answered best by sap-docs `abap_feature_matrix`; without it, try
+   the keyword docs' release news (`ABENNEWS-7xx-*`) via `fetch_keyworddoc.py`.
 
 ---
 

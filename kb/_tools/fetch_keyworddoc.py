@@ -64,7 +64,7 @@ def parse(url):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("usage: python fetch_keyworddoc.py <ABEN_url> [...]"); sys.exit(1)
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+        print(__doc__.strip()); sys.exit(0 if len(sys.argv) >= 2 else 1)
     out = [parse(u) for u in sys.argv[1:]]
     print(json.dumps(out, indent=2, ensure_ascii=False))

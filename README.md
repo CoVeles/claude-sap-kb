@@ -10,7 +10,7 @@ SAP topics to add. Optionally it plugs into
 [mcp-sap-docs](https://github.com/marianfoo/mcp-sap-docs) as a second, search-based tier.
 
 **What makes it different from a doc-search MCP server:** topics are *read completely* by
-reader agents and indexed page by page, so answers carry `[kb: <topic> p<n>]` citations to a
+reader agents and indexed page by page, so answers carry `[kb: <topic> <tag> p<n>]` citations to a
 page that was actually read — and anything the KB doesn't cover is declared a gap and
 answered from a lower, explicitly labelled tier, never blended in.
 
@@ -119,6 +119,7 @@ the same reader pipeline. You can also drive the tool directly:
 
 ```bash
 python _tools/fetch_sap_help.py search "<query>" [--product ABAP_PLATFORM_NEW]
+python _tools/fetch_sap_help.py page <page_url>          # print one page, writes nothing
 python _tools/fetch_sap_help.py toc <page_url> --under "<section title or loio>"
 python _tools/fetch_sap_help.py fetch "<KB root>/<topic>" --from-toc <page_url> --under "<section>"
 ```
@@ -190,7 +191,7 @@ The `sap-kb` skill walks a fixed ladder and labels every claim with the tier it 
 
 | Tier | Source | Citation |
 |---|---|---|
-| 1 | This KB (fully read topics) | `[kb: <topic> p<n>]` |
+| 1 | This KB (fully read topics) | `[kb: <topic> <tag> p<n>]` |
 | 2 | mcp-sap-docs offline corpus (search, `includeOnline: false`) | `[sap-docs: <doc id or URL>]` |
 | 3 | help.sap.com, fetched live | `[sap-help: <URL>]` + product/version |
 | 4 | SAP Community | `[community — unverified: <URL>]` |

@@ -10,6 +10,7 @@ plain HTTP (same approach as marianfoo/mcp-sap-docs, src/lib/sapHelp.ts):
 
 Usage:
   python fetch_sap_help.py search "<query>" [--product ABAP_PLATFORM_NEW] [--max 20]
+  python fetch_sap_help.py page <page_url>                       (print one page, writes nothing)
   python fetch_sap_help.py toc <page_url> [--under <loio|title text>]
   python fetch_sap_help.py fetch <topic_dir> <page_url> [<page_url> ...] [--tag web]
   python fetch_sap_help.py fetch <topic_dir> --from-toc <page_url> [--under <loio|title>] [--max 200]
@@ -200,6 +201,23 @@ def cmd_search(a):
                           "snippet": re.sub(r"<[^>]+>", "", r.get("snippet") or "")[:200]}, ensure_ascii=False))
 
 
+def cmd_page(a):
+    """Print one page (title, product/version, URL, text) to stdout — writes nothing."""
+    p, d, page = resolve(a.url)
+    text, imgs = html_to_text(page.get("body") or "")
+    if not text:
+        raise SystemExit(f"empty page body: {a.url}")
+    print(f"TITLE: {page.get('currentPage', {}).get('t') or ''}")
+    print(f"PRODUCT: {d.get('productName')} {d.get('versionName') or d.get('version')}")
+    print(f"SOURCE_URL: {a.url}")
+    if page.get("isMachineTranslated"):
+        print("[NOTE: machine-translated page]")
+    if imgs:
+        print(f"[{len(imgs)} image(s) referenced, not shown]")
+    print()
+    print(text)
+
+
 def cmd_toc(a):
     p, d, page = resolve(a.url)
     nodes = subtree(page["deliverable"].get("fullToc") or [], a.under)
@@ -268,12 +286,13 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("search"); s.add_argument("query"); s.add_argument("--product"); s.add_argument("--max", type=int, default=20)
+    pg = sub.add_parser("page"); pg.add_argument("url")
     t = sub.add_parser("toc"); t.add_argument("url"); t.add_argument("--under")
     fe = sub.add_parser("fetch"); fe.add_argument("topic_dir"); fe.add_argument("urls", nargs="*")
     fe.add_argument("--from-toc"); fe.add_argument("--under"); fe.add_argument("--tag", default="web")
     fe.add_argument("--max", type=int, default=200); fe.add_argument("--delay", type=float, default=0.3)
     a = ap.parse_args()
-    {"search": cmd_search, "toc": cmd_toc, "fetch": cmd_fetch}[a.cmd](a)
+    {"search": cmd_search, "page": cmd_page, "toc": cmd_toc, "fetch": cmd_fetch}[a.cmd](a)
 
 
 if __name__ == "__main__":
