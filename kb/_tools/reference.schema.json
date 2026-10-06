@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "sap-kb reference",
+  "description": "Machine-first per-topic index of one ingested SAP PDF. Consumed by agents. Every fact carries a page cite. No prose narrative.",
+  "type": "object",
+  "required": ["topic_id", "topic", "sources", "pages_total", "ingested_complete", "last_ingested", "keywords", "pages"],
+  "properties": {
+    "topic_id":   { "type": "string", "description": "folder slug, e.g. rap-overview" },
+    "topic":      { "type": "string", "description": "human title" },
+    "sources": {
+      "type": "array",
+      "description": "the PDFs that make up this topic (a topic may span several)",
+      "items": {
+        "type": "object",
+        "required": ["tag", "pages"],
+        "properties": {
+          "tag":   { "type": "string", "description": "short tag used in cites, e.g. part1" },
+          "file":  { "type": "string", "description": "original pdf file name" },
+          "pages": { "type": "integer", "description": "page count of this file" }
+        }
+      }
+    },
+    "pages_total":{ "type": "integer", "description": "sum of all sources' pages" },
+    "ingested_complete": { "type": "boolean", "description": "true only if every page 1..N of every source has a page record" },
+    "last_ingested": { "type": "string", "description": "YYYY-MM-DD" },
+    "warnings":   { "type": "array", "items": { "type": "string" }, "description": "unreadable pages/images, etc. empty if clean" },
+    "keywords":   { "type": "array", "items": { "type": "string" }, "description": "aggregate topic keywords for fast topic matching" },
+    "entities": {
+      "type": "object",
+      "description": "extracted SAP identifiers, for exact lookup",
+      "properties": {
+        "tcodes":   { "type": "array", "items": { "type": "string" } },
+        "classes":  { "type": "array", "items": { "type": "string" } },
+        "cds":      { "type": "array", "items": { "type": "string" } },
+        "tables":   { "type": "array", "items": { "type": "string" } },
+        "packages": { "type": "array", "items": { "type": "string" } },
+        "other":    { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "pages": {
+      "type": "array",
+      "description": "one record per page actually read",
+      "items": {
+        "type": "object",
+        "required": ["page", "summary"],
+        "properties": {
+          "page":      { "type": "integer", "description": "page number within its source file" },
+          "file_tag":  { "type": "string", "description": "which source this page belongs to, e.g. part1" },
+          "headings":  { "type": "array", "items": { "type": "string" } },
+          "keywords":  { "type": "array", "items": { "type": "string" } },
+          "summary":   { "type": "string", "description": "1-2 lines, what THIS page covers" },
+          "facts":     { "type": "array", "items": {
+              "type": "object",
+              "required": ["text", "cite"],
+              "properties": {
+                "text": { "type": "string", "description": "atomic fact, verbatim-grounded, no inference" },
+                "cite": { "type": "string", "description": "e.g. 'part1 p16'" }
+              }
+          }},
+          "image_ids": { "type": "array", "items": { "type": "string" }, "description": "IMG ids present on this page" }
+        }
+      }
+    },
+    "diagrams": {
+      "type": "array",
+      "description": "one record per substantial UNIQUE image, described from a visual (Haiku) read",
+      "items": {
+        "type": "object",
+        "required": ["id", "path", "pages", "description"],
+        "properties": {
+          "id":    { "type": "string", "description": "IMG<k>, matches image_ids in pages[]" },
+          "path":  { "type": "string", "description": "relative to topic dir, e.g. extracted/img/IMG32.png" },
+          "type":  { "type": "string", "description": "diagram|flow|screenshot|ui|table-image|formula|photo|icon|other|unreadable" },
+          "pages": { "type": "array", "items": { "type": "string" }, "description": "cites where it appears, e.g. ['part1 p56']" },
+          "w":     { "type": "integer" },
+          "h":     { "type": "integer" },
+          "description":  { "type": "string", "description": "prose description from a VISUAL read of the image" },
+          "visible_text": { "type": "string", "description": "labels/captions actually shown in the image" }
+        }
+      }
+    },
+    "gaps": { "type": "array", "items": { "type": "string" }, "description": "what this topic's PDFs do NOT cover" }
+  }
+}

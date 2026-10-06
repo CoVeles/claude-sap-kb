@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+
+# Never commit SAP documentation content. The KB root belongs outside this repo;
+# if an install ever points here, refuse its generated files and topic folders.
+INDEX.json
+INDEX.md
+kb/*
+!kb/_tools/
+*.pdf
+**/extracted/
+**/reference.json
+
+# local backups written by the installers
+*.bak-*
